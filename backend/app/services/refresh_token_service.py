@@ -10,7 +10,6 @@ from app.database import DbSession
 from app.models import RefreshToken
 from app.repositories.refresh_token_repository import refresh_token_repository
 from app.schemas.auth import TokenResponse, TokenType
-from app.services.sdk_token_service import create_sdk_user_token
 from app.utils.security import create_access_token
 
 
@@ -106,10 +105,7 @@ class RefreshTokenService:
 
         # Generate new access token and refresh token based on token type
         if token.token_type == TokenType.SDK:
-            access_token = create_sdk_user_token(
-                app_id=token.app_id,  # ty:ignore[invalid-argument-type]
-                user_id=str(token.user_id),
-            )
+            access_token = create_access_token(subject=str(token.user_id), scope="sdk", app_id=token.app_id)
             new_refresh_token = self.create_sdk_refresh_token(
                 db_session,
                 user_id=token.user_id,  # ty:ignore[invalid-argument-type]

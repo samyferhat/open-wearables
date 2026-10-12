@@ -6,8 +6,9 @@ from fastapi import APIRouter, Body, HTTPException, status
 from app.config import settings
 from app.database import DbSession
 from app.schemas.auth import SDKTokenRequest, TokenResponse
-from app.services import application_service, create_sdk_user_token, refresh_token_service
+from app.services import application_service, refresh_token_service
 from app.utils.auth import DeveloperOptionalDep
+from app.utils.security import create_access_token
 
 router = APIRouter()
 
@@ -63,10 +64,7 @@ def create_user_token(
         )
 
     # Generate user-scoped SDK token
-    access_token = create_sdk_user_token(
-        app_id=app_id,
-        user_id=str(user_id),
-    )
+    access_token = create_access_token(subject=str(user_id), scope="sdk", app_id=app_id)
 
     refresh_token = refresh_token_service.create_sdk_refresh_token(db, user_id, app_id)
 

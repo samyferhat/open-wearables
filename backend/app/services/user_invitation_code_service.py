@@ -15,8 +15,8 @@ from app.schemas.model_crud.credentials import (
     UserInvitationCodeRead,
 )
 from app.services.refresh_token_service import refresh_token_service
-from app.services.sdk_token_service import create_sdk_user_token
 from app.services.user_service import user_service
+from app.utils.security import create_access_token
 
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 8
@@ -67,10 +67,7 @@ class UserInvitationCodeService:
 
         app_id = f"invite:{invitation_code.created_by_id}"
 
-        access_token = create_sdk_user_token(
-            app_id=app_id,
-            user_id=str(invitation_code.user_id),
-        )
+        access_token = create_access_token(subject=str(invitation_code.user_id), scope="sdk", app_id=app_id)
 
         refresh_token = refresh_token_service.create_sdk_refresh_token(
             db_session,
