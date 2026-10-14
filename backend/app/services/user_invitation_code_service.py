@@ -9,6 +9,7 @@ from app.config import settings
 from app.database import DbSession
 from app.models.user_invitation_code import UserInvitationCode
 from app.repositories.user_invitation_code_repository import UserInvitationCodeRepository
+from app.schemas.auth import SDKTokenOrigin
 from app.schemas.model_crud.credentials import (
     InvitationCodeRedeemResponse,
     UserInvitationCodeCreate,
@@ -16,7 +17,6 @@ from app.schemas.model_crud.credentials import (
 )
 from app.services.refresh_token_service import refresh_token_service
 from app.services.user_service import user_service
-from app.utils.security import create_access_token
 
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 8
@@ -65,14 +65,11 @@ class UserInvitationCodeService:
 
         self.crud.mark_redeemed(db_session, invitation_code)
 
-        app_id = f"invite:{invitation_code.created_by_id}"
-
-        access_token = create_access_token(subject=str(invitation_code.user_id), scope="sdk", app_id=app_id)
-
-        refresh_token = refresh_token_service.create_sdk_refresh_token(
+        access_token, refresh_token = refresh_token_service.issue_sdk_tokens(
             db_session,
             user_id=invitation_code.user_id,
-            app_id=app_id,
+            origin=SDKTokenOrigin.INVITE,
+            issued_by_developer_id=invitation_code.created_by_id,
         )
 
         return InvitationCodeRedeemResponse(
