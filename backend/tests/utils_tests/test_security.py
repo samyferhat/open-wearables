@@ -143,6 +143,7 @@ class TestCreateAccessTokenExtraClaims:
     """SDK user tokens are developer tokens plus `scope` and `app_id` claims."""
 
     def test_sdk_token_carries_scope_and_app_id(self) -> None:
+        """SDK token should carry the subject, scope=sdk and the app_id claim."""
         token = create_access_token(subject="user_456", scope="sdk", app_id="app_123")
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
 
@@ -151,6 +152,7 @@ class TestCreateAccessTokenExtraClaims:
         assert payload["app_id"] == "app_123"
 
     def test_sdk_token_expires_after_configured_minutes(self) -> None:
+        """SDK token should expire after settings.access_token_expire_minutes."""
         before = datetime.now(timezone.utc)
         token = create_access_token(subject="user_456", scope="sdk", app_id="app_123")
         after = datetime.now(timezone.utc)
@@ -161,12 +163,14 @@ class TestCreateAccessTokenExtraClaims:
         assert exp < after + timedelta(minutes=settings.access_token_expire_minutes + 1)
 
     def test_developer_token_has_no_extra_claims(self) -> None:
+        """Developer token without extra claims should only carry sub and exp."""
         token = create_access_token(subject="developer_1")
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
 
         assert set(payload) == {"sub", "exp"}
 
     def test_different_apps_and_users_get_distinct_claims(self) -> None:
+        """Different users and apps should get their own sub and app_id claims."""
         token1 = create_access_token(subject="user_1", scope="sdk", app_id="app_1")
         token2 = create_access_token(subject="user_2", scope="sdk", app_id="app_2")
         payload1 = jwt.decode(token1, settings.secret_key, algorithms=[settings.algorithm])
@@ -177,6 +181,7 @@ class TestCreateAccessTokenExtraClaims:
 
     @pytest.mark.parametrize("claim", ["sub", "exp"])
     def test_reserved_claims_cannot_be_overridden(self, claim: str) -> None:
+        """Passing sub or exp as an extra claim should raise ValueError."""
         with pytest.raises(ValueError, match=claim):
             create_access_token(subject="user_456", **{claim: "forged"})
 
